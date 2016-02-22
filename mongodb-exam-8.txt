@@ -1,0 +1,199 @@
+Final: Question 8
+
+We have been asked by our users to pull some data from a previous database backup of a sharded cluster. They'd like us to set up a temporary data mart for this purpose, in addition to answering some questions from the data. The next few questions involve this user request.
+
+First we will restore the backup. Download gene_backup.zip from the Download Handout link and unzip this to a temp location on your computer.
+
+The original cluster that was backed up consisted of two shards, each of which was a three member replica set. The first one named "s1" and the second "s2". We have one mongodump (backup) for each shard, plus the config database. After you unzip you will see something like this:
+
+$ ls -la
+total 0
+drwxr-xr-x   5 dwight  staff  170 Dec 11 13:47 .
+drwxr-xr-x  17 dwight  staff  578 Dec 11 13:49 ..
+drwxr-xr-x   4 dwight  staff  136 Dec 11 13:45 config_server
+drwxr-xr-x   5 dwight  staff  170 Dec 11 13:46 s1
+drwxr-xr-x   5 dwight  staff  170 Dec 11 13:46 s2
+Our data mart will be temporary, so we won't need more than one mongod per shard, nor more than one config server (we are not worried about downtime, the mart is temporary).
+
+As a first step, restore the config server backup and run a mongod config server instance with that restored data. The backups were made with mongodump. Thus you will use the mongorestore utility to restore.
+
+Once you have the config server running, confirm the restore of the config server data by running the last javascript line below in the mongo shell, and entering the 5 character result it returns.
+
+$ mongo localhost:27019/config
+configsvr> 
+configsvr> db
+config
+configsvr> db.chunks.find().sort({_id:1}).next().lastmodEpoch.getTimestamp().toUTCString().substr(20,6)
+Notes:
+
+You must do this with MongoDB 3.0. The mongorestore may not work with prior versions of MongoDB.
+If you do not see the prompt with 'configsvr' before the '>', then you are not running as a config server.
+
+ANSWER = Step by Step
+=====================
+Turn on the config db
+C:\Users\Jeffry>mongod --configsvr --dbpath c:/data/configdb --port 27019
+
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server>dir
+ Volume in drive C is OS
+ Volume Serial Number is F0D1-13EA
+
+ Directory of C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server
+
+28/04/2015  12:48 AM    <DIR>          .
+28/04/2015  12:48 AM    <DIR>          ..
+28/04/2015  12:48 AM    <DIR>          config
+               0 File(s)              0 bytes
+               3 Dir(s)  14,823,899,136 bytes free
+
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server>cd config
+
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server\config>dir
+ Volume in drive C is OS
+ Volume Serial Number is F0D1-13EA
+
+ Directory of C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server\config
+
+28/04/2015  12:48 AM    <DIR>          .
+28/04/2015  12:48 AM    <DIR>          ..
+28/04/2015  12:48 AM            20,976 actionlog.bson
+28/04/2015  12:48 AM               116 actionlog.metadata.json
+28/04/2015  12:48 AM             3,362 changelog.bson
+28/04/2015  12:48 AM               117 changelog.metadata.json
+28/04/2015  12:48 AM               325 chunks.bson
+28/04/2015  12:48 AM               369 chunks.metadata.json
+28/04/2015  12:48 AM               112 collections.bson
+28/04/2015  12:48 AM                90 collections.metadata.json
+28/04/2015  12:48 AM               152 databases.bson
+28/04/2015  12:48 AM                88 databases.metadata.json
+28/04/2015  12:48 AM               144 lockpings.bson
+28/04/2015  12:48 AM               153 lockpings.metadata.json
+28/04/2015  12:48 AM               735 locks.bson
+28/04/2015  12:48 AM               226 locks.metadata.json
+28/04/2015  12:48 AM                95 mongos.bson
+28/04/2015  12:48 AM                85 mongos.metadata.json
+28/04/2015  12:48 AM                35 settings.bson
+28/04/2015  12:48 AM                87 settings.metadata.json
+28/04/2015  12:48 AM               168 shards.bson
+28/04/2015  12:48 AM               161 shards.metadata.json
+28/04/2015  12:48 AM             1,537 system.indexes.bson
+28/04/2015  12:48 AM                 0 tags.bson
+28/04/2015  12:48 AM               167 tags.metadata.json
+28/04/2015  12:48 AM                83 version.bson
+28/04/2015  12:48 AM                86 version.metadata.json
+              25 File(s)         29,469 bytes
+               2 Dir(s)  14,823,899,136 bytes free
+
+Restore from the folder
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33\config_server>mongorestore --verbose --host localhost --port 27019 --db config --drop config
+
+Output
+======
+2016-02-22T15:52:12.162+1100    using write concern: w='1', j=false, fsync=false, wtimeout=0
+2016-02-22T15:52:12.163+1100    building a list of collections to restore from config dir
+2016-02-22T15:52:12.163+1100    found collection config.actionlog bson to restore
+2016-02-22T15:52:12.163+1100    found collection config.actionlog metadata to restore
+2016-02-22T15:52:12.163+1100    found collection config.changelog bson to restore
+2016-02-22T15:52:12.164+1100    found collection config.changelog metadata to restore
+2016-02-22T15:52:12.164+1100    found collection config.chunks bson to restore
+2016-02-22T15:52:12.164+1100    found collection config.chunks metadata to restore
+2016-02-22T15:52:12.164+1100    found collection config.collections bson to restore
+2016-02-22T15:52:12.164+1100    found collection config.collections metadata to restore
+2016-02-22T15:52:12.164+1100    found collection config.databases bson to restore
+2016-02-22T15:52:12.164+1100    found collection config.databases metadata to restore
+2016-02-22T15:52:12.164+1100    found collection config.lockpings bson to restore
+2016-02-22T15:52:12.164+1100    found collection config.lockpings metadata to restore
+2016-02-22T15:52:12.164+1100    found collection config.locks bson to restore
+2016-02-22T15:52:12.165+1100    found collection config.locks metadata to restore
+2016-02-22T15:52:12.165+1100    found collection config.mongos bson to restore
+2016-02-22T15:52:12.165+1100    found collection config.mongos metadata to restore
+2016-02-22T15:52:12.165+1100    found collection config.settings bson to restore
+2016-02-22T15:52:12.165+1100    found collection config.settings metadata to restore
+2016-02-22T15:52:12.165+1100    found collection config.shards bson to restore
+2016-02-22T15:52:12.165+1100    found collection config.shards metadata to restore
+2016-02-22T15:52:12.165+1100    found collection config.tags bson to restore
+2016-02-22T15:52:12.165+1100    found collection config.tags metadata to restore
+2016-02-22T15:52:12.165+1100    found collection config.version bson to restore
+2016-02-22T15:52:12.166+1100    found collection config.version metadata to restore
+2016-02-22T15:52:12.166+1100    dropping collection config.actionlog before restoring
+2016-02-22T15:52:12.166+1100    dropping collection config.changelog before restoring
+2016-02-22T15:52:12.166+1100    dropping collection config.locks before restoring
+2016-02-22T15:52:12.166+1100    dropping collection config.chunks before restoring
+2016-02-22T15:52:12.179+1100    reading metadata for config.actionlog from
+2016-02-22T15:52:12.179+1100    creating collection config.actionlog using options from metadata
+2016-02-22T15:52:12.186+1100    reading metadata for config.changelog from
+2016-02-22T15:52:12.186+1100    creating collection config.changelog using options from metadata
+2016-02-22T15:52:12.204+1100    reading metadata for config.locks from
+2016-02-22T15:52:12.204+1100    no collection options to restore
+2016-02-22T15:52:12.204+1100    restoring config.locks from
+2016-02-22T15:52:12.224+1100    reading metadata for config.chunks from
+2016-02-22T15:52:12.225+1100    no collection options to restore
+2016-02-22T15:52:12.225+1100    restoring config.chunks from
+2016-02-22T15:52:12.239+1100    restoring config.actionlog from
+2016-02-22T15:52:12.252+1100    restoring config.changelog from
+2016-02-22T15:52:12.265+1100    restoring indexes for collection config.locks from metadata
+2016-02-22T15:52:12.275+1100    restoring indexes for collection config.chunks from metadata
+2016-02-22T15:52:12.276+1100    restoring indexes for collection config.changelog from metadata
+2016-02-22T15:52:12.276+1100    restoring indexes for collection config.actionlog from metadata
+2016-02-22T15:52:12.325+1100    finished restoring config.locks (3 documents)
+2016-02-22T15:52:12.326+1100    dropping collection config.shards before restoring
+2016-02-22T15:52:12.396+1100    finished restoring config.chunks (2 documents)
+2016-02-22T15:52:12.396+1100    dropping collection config.databases before restoring
+2016-02-22T15:52:12.396+1100    finished restoring config.changelog (11 documents)
+2016-02-22T15:52:12.396+1100    dropping collection config.lockpings before restoring
+2016-02-22T15:52:12.397+1100    finished restoring config.actionlog (114 documents)
+2016-02-22T15:52:12.397+1100    dropping collection config.collections before restoring
+2016-02-22T15:52:12.409+1100    reading metadata for config.shards from
+2016-02-22T15:52:12.410+1100    no collection options to restore
+2016-02-22T15:52:12.410+1100    restoring config.shards from
+2016-02-22T15:52:12.434+1100    reading metadata for config.databases from
+2016-02-22T15:52:12.435+1100    no collection options to restore
+2016-02-22T15:52:12.435+1100    restoring config.databases from
+2016-02-22T15:52:12.448+1100    reading metadata for config.lockpings from
+2016-02-22T15:52:12.448+1100    no collection options to restore
+2016-02-22T15:52:12.448+1100    restoring config.lockpings from
+2016-02-22T15:52:12.464+1100    reading metadata for config.collections from
+2016-02-22T15:52:12.464+1100    no collection options to restore
+2016-02-22T15:52:12.465+1100    restoring config.collections from
+2016-02-22T15:52:12.475+1100    restoring indexes for collection config.lockpings from metadata
+2016-02-22T15:52:12.487+1100    restoring indexes for collection config.databases from metadata
+2016-02-22T15:52:12.499+1100    restoring indexes for collection config.shards from metadata
+2016-02-22T15:52:12.525+1100    finished restoring config.lockpings (2 documents)
+2016-02-22T15:52:12.525+1100    finished restoring config.databases (3 documents)
+2016-02-22T15:52:12.525+1100    dropping collection config.mongos before restoring
+2016-02-22T15:52:12.525+1100    dropping collection config.version before restoring
+2016-02-22T15:52:12.550+1100    restoring indexes for collection config.collections from metadata
+2016-02-22T15:52:12.564+1100    finished restoring config.shards (2 documents)
+2016-02-22T15:52:12.564+1100    dropping collection config.settings before restoring
+2016-02-22T15:52:12.589+1100    reading metadata for config.mongos from
+2016-02-22T15:52:12.589+1100    no collection options to restore
+2016-02-22T15:52:12.590+1100    restoring config.mongos from
+2016-02-22T15:52:12.600+1100    reading metadata for config.version from
+2016-02-22T15:52:12.600+1100    finished restoring config.collections (1 document)
+2016-02-22T15:52:12.601+1100    no collection options to restore
+2016-02-22T15:52:12.601+1100    dropping collection config.tags before restoring
+2016-02-22T15:52:12.601+1100    restoring config.version from
+2016-02-22T15:52:12.613+1100    reading metadata for config.settings from
+2016-02-22T15:52:12.613+1100    no collection options to restore
+2016-02-22T15:52:12.613+1100    restoring config.settings from
+2016-02-22T15:52:12.620+1100    reading metadata for config.tags from
+2016-02-22T15:52:12.620+1100    no collection options to restore
+2016-02-22T15:52:12.620+1100    restoring config.tags from
+2016-02-22T15:52:12.626+1100    restoring indexes for collection config.tags from metadata
+2016-02-22T15:52:12.633+1100    restoring indexes for collection config.mongos from metadata
+2016-02-22T15:52:12.644+1100    restoring indexes for collection config.version from metadata
+2016-02-22T15:52:12.667+1100    finished restoring config.tags (0 documents)
+2016-02-22T15:52:12.679+1100    restoring indexes for collection config.settings from metadata
+2016-02-22T15:52:12.679+1100    finished restoring config.mongos (1 document)
+2016-02-22T15:52:12.679+1100    finished restoring config.version (1 document)
+2016-02-22T15:52:12.680+1100    finished restoring config.settings (1 document)
+2016-02-22T15:52:12.680+1100    done
+
+C:\Users\Jeffry>mongo localhost:27019/config
+MongoDB shell version: 3.2.0
+connecting to: localhost:27019/config
+configsvr> db
+config
+configsvr> db.chunks.find().sort({_id:1}).next().lastmodEpoch.getTimestamp().toUTCString().substr(20
+,6)
+39:15

@@ -1,0 +1,120 @@
+Final: Question 9
+
+Now that the config server from question #8 is up and running, we will restore the two shards ("s1" and "s2").
+
+If we inspect our restored config db, we see this in db.shards:
+
+~/dba/final $ mongo localhost:27019/config
+MongoDB shell version: 3.0.0
+connecting to: localhost:27019/config
+configsvr> db.shards.find()
+{ "_id" : "s1", "host" : "s1/genome_svr1:27501,genome_svr2:27502,genome_svr2:27503" }
+{ "_id" : "s2", "host" : "s2/genome_svr4:27601,genome_svr5:27602,genome_svr5:27603" }
+From this we know when we run a mongos for the cluster, it will expect the first shard to be a replica set named "s1", and the second to be a replica set named "s2", and also to be able to be able to resolve and connect to at least one of the seed hostnames for each shard.
+
+If we were restoring this cluster as "itself", it would be best to assign the hostnames "genome_svr1" etc. to the appropriate IP addresses in DNS, and not change config.shard. However, for this problem, our job is not to restore the cluster, but rather to create a new temporary data mart initialized with this dataset.
+
+Thus instead we will update the config.shards metadata to point to the locations of our new shard servers. Update the config.shards collection such that your output is:
+
+configsvr> db.shards.find()
+{ "_id" : "s1", "host" : "localhost:27501" }
+{ "_id" : "s2", "host" : "localhost:27601" }
+configsvr> 
+Be sure when you do this nothing is running except the single config server. mongod and mongos processes cache metadata, so this is important. After the update restart the config server itself for the same reason.
+
+Now start a mongod for each shard -- one on port 27501 for shard "s1" and on port 27601 for shard "s2". At this point if you run ps you should see three mongod's -- one for each shard, and one for our config server. Note they need not be replica sets, but just regular mongod's, as we did not begin our host string in config.shards with setname/. Finally, use mongorestore to restore the data for each shard.
+
+The next step is to start a mongos for the cluster.
+
+Connect to the mongos with a mongo shell. Run this:
+
+use snps
+var x = db.elegans.aggregate( [ { $match : { N2 : "T" } } , { $group : { _id:"$N2" , n : { $sum : 1 } } } ] ).next(); print( x.n )
+Enter the number output for n.
+
+Notes:
+
+You must do this with MongoDB 3.0. The mongoimport may not work with prior versions of MongoDB.
+
+=====================================================================================================================================
+Answer:
+NOTE: I use different ports
+
+configsvr> db.shards.find()
+{ "_id" : "s1", "host" : "s1/genome_svr1:27501,genome_svr2:27502,genome_svr2:27503" }
+{ "_id" : "s2", "host" : "s2/genome_svr4:27601,genome_svr5:27602,genome_svr5:27603" }
+
+configsvr> db.shards.save({ "_id" : "s1", "host" : "localhost:27500" })
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+configsvr> db.shards.save({ "_id" : "s2", "host" : "localhost:27600" })
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+configsvr> db.shards.find()
+{ "_id" : "s1", "host" : "localhost:27500" }
+{ "_id" : "s2", "host" : "localhost:27600" }
+
+Run 1st Mongod
+C:\Users\Jeffry>mongod --shardsvr --dbpath c:/data/s1 --port 27500
+
+Run 2nd Mongod
+C:\Users\Jeffry>mongod --shardsvr --dbpath c:/data/s2 --port 27600
+
+Restore the data
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33>mongorestore --verbose -h localhost:27500 --drop s1
+
+2016-02-22T16:32:54.411+1100    using write concern: w='1', j=false, fsync=false, wtimeout=0
+2016-02-22T16:32:54.412+1100    building a list of dbs and collections to restore from s1 dir
+2016-02-22T16:32:54.412+1100    found collection snps.elegans bson to restore
+2016-02-22T16:32:54.412+1100    found collection snps.elegans metadata to restore
+2016-02-22T16:32:54.412+1100    found collection snps.system.users bson to restore
+2016-02-22T16:32:54.412+1100    found collection snps.system.users metadata to restore
+2016-02-22T16:32:54.413+1100    found collection test.system.users bson to restore
+2016-02-22T16:32:54.413+1100    found collection test.system.users metadata to restore
+2016-02-22T16:32:54.413+1100    reading metadata for snps.elegans from
+2016-02-22T16:32:54.413+1100    reading metadata for test.system.users from
+2016-02-22T16:32:54.413+1100    no collection options to restore
+2016-02-22T16:32:54.413+1100    no collection options to restore
+2016-02-22T16:32:54.413+1100    reading metadata for snps.system.users from
+2016-02-22T16:32:54.414+1100    restoring snps.elegans from
+2016-02-22T16:32:54.414+1100    no collection options to restore
+2016-02-22T16:32:54.415+1100    restoring test.system.users from
+2016-02-22T16:32:54.415+1100    restoring snps.system.users from
+2016-02-22T16:32:54.452+1100    restoring indexes for collection test.system.users from metadata
+2016-02-22T16:32:54.452+1100    restoring indexes for collection snps.system.users from metadata
+2016-02-22T16:32:54.488+1100    finished restoring test.system.users (1 document)
+2016-02-22T16:32:54.498+1100    finished restoring snps.system.users (1 document)
+2016-02-22T16:32:57.414+1100    [#####################...]  snps.elegans  12.0 MB/13.3 MB  (90.5%)
+2016-02-22T16:32:57.908+1100    [########################]  snps.elegans  13.3 MB/13.3 MB  (100.0%)
+2016-02-22T16:32:57.908+1100    restoring indexes for collection snps.elegans from metadata
+2016-02-22T16:32:58.694+1100    finished restoring snps.elegans (168138 documents)
+2016-02-22T16:32:58.694+1100    done
+
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33>mongorestore --verbose -h localhost:27600 --drop s2
+
+2016-02-22T16:33:45.762+1100    using write concern: w='1', j=false, fsync=false, wtimeout=0
+2016-02-22T16:33:45.763+1100    building a list of dbs and collections to restore from s2 dir
+2016-02-22T16:33:45.763+1100    found collection snps.elegans bson to restore
+2016-02-22T16:33:45.763+1100    found collection snps.elegans metadata to restore
+2016-02-22T16:33:45.764+1100    reading metadata for snps.elegans from
+2016-02-22T16:33:45.764+1100    no collection options to restore
+2016-02-22T16:33:45.764+1100    restoring snps.elegans from
+2016-02-22T16:33:45.797+1100    restoring indexes for collection snps.elegans from metadata
+2016-02-22T16:33:45.816+1100    finished restoring snps.elegans (482 documents)
+2016-02-22T16:33:45.816+1100    done
+
+Start up the mongos
+C:\Users\Jeffry>mongos --configdb localhost:27019 --port 27005
+
+Connect to mongos using mongo
+
+C:\Users\Jeffry\Desktop\gene_backup.753a2a48fb33>mongo --port 27005
+MongoDB shell version: 3.2.0
+connecting to: 127.0.0.1:27005/test
+mongos> show dbs
+config  0.001GB
+snps    0.006GB
+test    0.000GB
+mongos> use snps
+switched to db snps
+mongos> var x = db.elegans.aggregate( [ { $match : { N2 : "T" } } , { $group : { _id:"$N2" , n : { $
+sum : 1 } } } ] ).next(); print( x.n )
+47664

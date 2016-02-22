@@ -1,0 +1,303 @@
+Final: Question 10
+
+Now, for our temporary data mart, once again from a mongo shell connected to the cluster:
+
+
+1) create an index {N2:1,mutant:1} for the snps.elegans collection. 
+2) now run:
+db.elegans.find({N2:"T",mutant:"A"}).limit(5).explain("executionStats")
+Based on the explain output, which of the following statements below are true?
+
+
+a. 5 documents are examined.
+b. Thousands of documents are examined.
+c. 2 shards are queried.
+d. 8 documents are examined.
+e. 7 documents are examined.
+f. 1 shard is queried.
+g. No shards are queried.
+
+Answer: c,e
+
+mongos> db.collection.createIndex( { N2:1,mutant:1 } )
+{
+        "raw" : {
+                "localhost:27500" : {
+                        "createdCollectionAutomatically" : true,
+                        "numIndexesBefore" : 1,
+                        "numIndexesAfter" : 2,
+                        "ok" : 1
+                }
+        },
+        "ok" : 1
+}
+mongos> db.elegans.find({N2:"T",mutant:"A"}).limit(5).explain("executionStats")
+{
+        "queryPlanner" : {
+                "mongosPlannerVersion" : 1,
+                "winningPlan" : {
+                        "stage" : "SHARD_MERGE",
+                        "shards" : [
+                                {
+                                        "shardName" : "s1",
+                                        "connectionString" : "localhost:27500",
+                                        "serverInfo" : {
+                                                "host" : "JSusanto",
+                                                "port" : 27500,
+                                                "version" : "3.2.0",
+                                                "gitVersion" : "45d947729a0315accb6d4f15a6b06be6d9c1
+9fe7"
+                                        },
+                                        "plannerVersion" : 1,
+                                        "namespace" : "snps.elegans",
+                                        "indexFilterSet" : false,
+                                        "parsedQuery" : {
+                                                "$and" : [
+                                                        {
+                                                                "N2" : {
+                                                                        "$eq" : "T"
+                                                                }
+                                                        },
+                                                        {
+                                                                "mutant" : {
+                                                                        "$eq" : "A"
+                                                                }
+                                                        }
+                                                ]
+                                        },
+                                        "winningPlan" : {
+                                                "stage" : "LIMIT",
+                                                "limitAmount" : 5,
+                                                "inputStage" : {
+                                                        "stage" : "SHARDING_FILTER",
+                                                        "inputStage" : {
+                                                                "stage" : "COLLSCAN",
+                                                                "filter" : {
+                                                                        "$and" : [
+                                                                                {
+                                                                                        "N2" : {
+                                                                                                "$eq
+" : "T"
+                                                                                        }
+                                                                                },
+                                                                                {
+                                                                                        "mutant" : {
+
+                                                                                                "$eq
+" : "A"
+                                                                                        }
+                                                                                }
+                                                                        ]
+                                                                },
+                                                                "direction" : "forward"
+                                                        }
+                                                }
+                                        },
+                                        "rejectedPlans" : [ ]
+                                },
+                                {
+                                        "shardName" : "s2",
+                                        "connectionString" : "localhost:27600",
+                                        "serverInfo" : {
+                                                "host" : "JSusanto",
+                                                "port" : 27600,
+                                                "version" : "3.2.0",
+                                                "gitVersion" : "45d947729a0315accb6d4f15a6b06be6d9c1
+9fe7"
+                                        },
+                                        "plannerVersion" : 1,
+                                        "namespace" : "snps.elegans",
+                                        "indexFilterSet" : false,
+                                        "parsedQuery" : {
+                                                "$and" : [
+                                                        {
+                                                                "N2" : {
+                                                                        "$eq" : "T"
+                                                                }
+                                                        },
+                                                        {
+                                                                "mutant" : {
+                                                                        "$eq" : "A"
+                                                                }
+                                                        }
+                                                ]
+                                        },
+                                        "winningPlan" : {
+                                                "stage" : "LIMIT",
+                                                "limitAmount" : 5,
+                                                "inputStage" : {
+                                                        "stage" : "SHARDING_FILTER",
+                                                        "inputStage" : {
+                                                                "stage" : "COLLSCAN",
+                                                                "filter" : {
+                                                                        "$and" : [
+                                                                                {
+                                                                                        "N2" : {
+                                                                                                "$eq
+" : "T"
+                                                                                        }
+                                                                                },
+                                                                                {
+                                                                                        "mutant" : {
+
+                                                                                                "$eq
+" : "A"
+                                                                                        }
+                                                                                }
+                                                                        ]
+                                                                },
+                                                                "direction" : "forward"
+                                                        }
+                                                }
+                                        },
+                                        "rejectedPlans" : [ ]
+                                }
+                        ]
+                }
+        },
+        "executionStats" : {
+                "nReturned" : 7,
+                "executionTimeMillis" : 0,
+                "totalKeysExamined" : 0,
+                "totalDocsExamined" : 967,
+                "executionStages" : {
+                        "stage" : "SHARD_MERGE",
+                        "nReturned" : 7,
+                        "executionTimeMillis" : 0,
+                        "totalKeysExamined" : 0,
+                        "totalDocsExamined" : 967,
+                        "totalChildMillis" : NumberLong(0),
+                        "shards" : [
+                                {
+                                        "shardName" : "s1",
+                                        "executionSuccess" : true,
+                                        "executionStages" : {
+                                                "stage" : "LIMIT",
+                                                "nReturned" : 5,
+                                                "executionTimeMillisEstimate" : 0,
+                                                "works" : 487,
+                                                "advanced" : 5,
+                                                "needTime" : 481,
+                                                "needYield" : 0,
+                                                "saveState" : 3,
+                                                "restoreState" : 3,
+                                                "isEOF" : 1,
+                                                "invalidates" : 0,
+                                                "limitAmount" : 5,
+                                                "inputStage" : {
+                                                        "stage" : "SHARDING_FILTER",
+                                                        "nReturned" : 5,
+                                                        "executionTimeMillisEstimate" : 0,
+                                                        "works" : 486,
+                                                        "advanced" : 5,
+                                                        "needTime" : 480,
+                                                        "needYield" : 0,
+                                                        "saveState" : 3,
+                                                        "restoreState" : 3,
+                                                        "isEOF" : 0,
+                                                        "invalidates" : 0,
+                                                        "chunkSkips" : 1,
+                                                        "inputStage" : {
+                                                                "stage" : "COLLSCAN",
+                                                                "filter" : {
+                                                                        "$and" : [
+                                                                                {
+                                                                                        "N2" : {
+                                                                                                "$eq
+" : "T"
+                                                                                        }
+                                                                                },
+                                                                                {
+                                                                                        "mutant" : {
+
+                                                                                                "$eq
+" : "A"
+                                                                                        }
+                                                                                }
+                                                                        ]
+                                                                },
+                                                                "nReturned" : 6,
+                                                                "executionTimeMillisEstimate" : 0,
+                                                                "works" : 486,
+                                                                "advanced" : 6,
+                                                                "needTime" : 480,
+                                                                "needYield" : 0,
+                                                                "saveState" : 3,
+                                                                "restoreState" : 3,
+                                                                "isEOF" : 0,
+                                                                "invalidates" : 0,
+                                                                "direction" : "forward",
+                                                                "docsExamined" : 485
+                                                        }
+                                                }
+                                        }
+                                },
+                                {
+                                        "shardName" : "s2",
+                                        "executionSuccess" : true,
+                                        "executionStages" : {
+                                                "stage" : "LIMIT",
+                                                "nReturned" : 2,
+                                                "executionTimeMillisEstimate" : 0,
+                                                "works" : 484,
+                                                "advanced" : 2,
+                                                "needTime" : 481,
+                                                "needYield" : 0,
+                                                "saveState" : 3,
+                                                "restoreState" : 3,
+                                                "isEOF" : 1,
+                                                "invalidates" : 0,
+                                                "limitAmount" : 5,
+                                                "inputStage" : {
+                                                        "stage" : "SHARDING_FILTER",
+                                                        "nReturned" : 2,
+                                                        "executionTimeMillisEstimate" : 0,
+                                                        "works" : 484,
+                                                        "advanced" : 2,
+                                                        "needTime" : 481,
+                                                        "needYield" : 0,
+                                                        "saveState" : 3,
+                                                        "restoreState" : 3,
+                                                        "isEOF" : 1,
+                                                        "invalidates" : 0,
+                                                        "chunkSkips" : 0,
+                                                        "inputStage" : {
+                                                                "stage" : "COLLSCAN",
+                                                                "filter" : {
+                                                                        "$and" : [
+                                                                                {
+                                                                                        "N2" : {
+                                                                                                "$eq
+" : "T"
+                                                                                        }
+                                                                                },
+                                                                                {
+                                                                                        "mutant" : {
+
+                                                                                                "$eq
+" : "A"
+                                                                                        }
+                                                                                }
+                                                                        ]
+                                                                },
+                                                                "nReturned" : 2,
+                                                                "executionTimeMillisEstimate" : 0,
+                                                                "works" : 484,
+                                                                "advanced" : 2,
+                                                                "needTime" : 481,
+                                                                "needYield" : 0,
+                                                                "saveState" : 3,
+                                                                "restoreState" : 3,
+                                                                "isEOF" : 1,
+                                                                "invalidates" : 0,
+                                                                "direction" : "forward",
+                                                                "docsExamined" : 482
+                                                        }
+                                                }
+                                        }
+                                }
+                        ]
+                }
+        },
+        "ok" : 1
+}
